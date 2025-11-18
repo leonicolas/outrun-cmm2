@@ -1,0 +1,5 @@
+*.AutoSave.*
+.vscode/
+test.bas
+*.bak
+t.bas
