@@ -8,7 +8,7 @@ dim g_pos_x=0, g_pos_y=130
 #include "constants.inc"
 #include "input.inc"
 
-const GAME_TICK_MS=1000/500
+const GAME_TICK_MS=1000/500 ' Temporary FPS cap for testing
 const SCREEN_CX=mm.hres/2
 const SCREEN_CY=mm.vres/3*2
 
@@ -20,12 +20,10 @@ const SEGMENT_LENGTH=300
 const SCREEN_SEGMENTS=16
 
 dim g_tick
-
 dim g_dist_to_player=160
 ' Camera: x, y, z, distance to projection plane
 dim g_camera(3)=(0,120,-g_dist_to_player,0)
 g_camera(3)=1/(g_camera(1)/g_dist_to_player)
-
 ' Segment: World x, y, z | road colour | off road colour
 dim g_segments(100-1, 7)
 dim g_curr_segment%=0
@@ -46,14 +44,14 @@ end sub
 sub load_road()
     local i%
     for i%=0 to bound(g_segments())
-        g_segments(i%, 0) = 0
-        g_segments(i%, 1) = 0
-        g_segments(i%, 2) = i% * SEGMENT_LENGTH
-        g_segments(i%, 3) = choice(i% mod 2, rgb(146,146,146), rgb(154,154,154)) ' Road colour
-        g_segments(i%, 4) = choice(i% mod 2, rgb(227,211,195), rgb(235,219,203)) ' Off road colour
-        g_segments(i%, 5) = choice(i% mod 2, rgb(255,255,255), 0) ' Lane colour
-        g_segments(i%, 6) = choice(i% mod 2, rgb(146,146,146), rgb(255,255,255)) ' Rumble strip colour
-        g_segments(i%, 7) = 3 ' Number of lanes
+        g_segments(i%, 0)=0
+        g_segments(i%, 1)=0
+        g_segments(i%, 2)=i% * SEGMENT_LENGTH
+        g_segments(i%, 3)=choice(i% mod 2, rgb(146,146,146), rgb(154,154,154)) ' Road colour
+        g_segments(i%, 4)=choice(i% mod 2, rgb(227,211,195), rgb(235,219,203)) ' Off road colour
+        g_segments(i%, 5)=choice(i% mod 2, rgb(255,255,255), 0) ' Lane colour
+        g_segments(i%, 6)=choice(i% mod 2, rgb(146,146,146), rgb(255,255,255)) ' Rumble strip colour
+        g_segments(i%, 7)=3 ' Number of lanes
     next i%
 end sub
 
@@ -65,8 +63,7 @@ sub run_stage()
     do
         if timer - prev_frame_timer < GAME_TICK_MS then continue do
         delta_time=(timer-prev_frame_timer)/1000
-        prev_frame_timer=timer
-        inc g_tick
+        prev_frame_timer=timer: inc g_tick
 
         update(delta_time)
         render(delta_time)
@@ -134,9 +131,9 @@ sub project_segment(ix%, projection())
     ' Scale factor based on camera depth
     local scale= g_camera(3)/translated_z
     ' Projected screen coordinates
-    projection(0)=cint((1 + scale * translated_x) * SCREEN_CX)
-    projection(1)=cint((1 - scale * translated_y) * SCREEN_CY)
-    projection(2)=cint(scale * ROAD_WIDTH * SCREEN_CX)
+    projection(0)=cint((1+scale*translated_x)*SCREEN_CX)
+    projection(1)=cint((1-scale*translated_y)*SCREEN_CY)
+    projection(2)=cint(scale*ROAD_WIDTH*SCREEN_CX)
 end sub
 
 sub draw_segment(prev_seg_proj(), curr_seg_proj(), ix%)
