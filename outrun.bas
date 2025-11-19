@@ -8,7 +8,7 @@ dim g_pos_x=0, g_pos_y=130
 #include "constants.inc"
 #include "input.inc"
 
-const GAME_TICK_MS=1000/30
+const GAME_TICK_MS=1000/500
 const SCREEN_CX=mm.hres/2
 const SCREEN_CY=mm.vres/3*2
 
@@ -84,21 +84,14 @@ sub load_stage()
     framebuffer create 1600,mm.vres
     page write framebuffer: cls 0
     load png MAP_DIR+"back.png",,,0
-
-    ' Create sprites
-    sprite read 1, 1000,0, mm.hres,143, framebuffer ' Cloud
-    sprite read 2, 750,145, mm.hres,16, framebuffer ' Hills
-    sprite read 3, 0,0, 94,44, 3 ' Ferrari
 end sub
 
 sub close_stage()
     framebuffer close
-    sprite close all
 end sub
 
 sub update(delta_time)
     process_input()
-
     g_camera(3)=1/(g_camera(1)/g_dist_to_player)
 end sub
 
@@ -108,14 +101,12 @@ sub render(delta_time)
     'cls rgb(0,146,251) ' Clear screen buffer
 
     ' Render background
-    'blit 1000,0, 0,23, mm.hres,143,framebuffer
-    'blit 750,145, 0,160, mm.hres,16,framebuffer
-    sprite write 1,0,23
-    sprite write 2,0,160
+    blit 1000,0, 0,23, mm.hres,143,framebuffer,&b100
+    blit 750,145, 0,160, mm.hres,16,framebuffer,&b100
 
     ' Render segments
     for i%=1 to SCREEN_SEGMENTS
-        'if g_segments(i%,1) > mm.vres then continue for
+        if g_segments(i%,1) > mm.vres then continue for
         project_segment(i%-1, prev_seg_proj())
         project_segment(i%, curr_seg_proj())
 
@@ -123,17 +114,15 @@ sub render(delta_time)
     next i%
 
     ' Stats
-    'print @(0,0)  "FPS: "+str$(int(1/delta_time))
+    print @(0,2)  "FPS: "+str$(int(1/delta_time))
     ' print @(0,8)  "X : "+str$(g_pos_x)
     ' print @(0,16) "Y: "+str$(g_pos_y)
 
     ' Player car
-    sprite write 3,110,193
-
-    box 0,0,mm.hres,mm.vres,1,rgb(0,0,1)
+    blit 0,0, 110,193, 94,44,3,&b100
 
     ' Render buffer to screen
-    page write 1: blit 0,0, 0,0, mm.hres,mm.vres, 2
+    page write 1: blit 1,1, 1,1, mm.hres-2,mm.vres-2, 2
     page write 2
 end sub
 
@@ -152,35 +141,25 @@ end sub
 
 sub draw_segment(prev_seg_proj(), curr_seg_proj(), ix%)
     local x(3), y(3)
-    local lane_distance=(ROAD_WIDTH-ROAD_WIDTH)/g_segments(ix%,7)
     local x1=prev_seg_proj(0), y1=prev_seg_proj(1), w1=prev_seg_proj(2)
     local x2=curr_seg_proj(0), y2=curr_seg_proj(1), w2=curr_seg_proj(2)
     local rw1=w1/RUMBLE_WIDTH, rw2=w2/RUMBLE_WIDTH
 
     ' Road
-    x(0)=x1-w1: y(0)=y1
-    x(1)=x1+w1: y(1)=y1
-    x(2)=x2+w2: y(2)=y2
-    x(3)=x2-w2: y(3)=y2
+    x(0)=x1-w1: y(0)=y1: x(1)=x1+w1: y(1)=y1
+    x(2)=x2+w2: y(2)=y2: x(3)=x2-w2: y(3)=y2
     polygon 4, x(), y(), g_segments(ix%,3), g_segments(ix%,3)
 
     ' Left rumble strip
-    x(0)=x1-w1-rw1
-    x(1)=x1-w1
-    x(2)=x2-w2
-    x(3)=x2-w2-rw2
+    x(0)=x1-w1-rw1: x(1)=x1-w1: x(2)=x2-w2: x(3)=x2-w2-rw2
     polygon 4, x(), y(), g_segments(ix%,6), g_segments(ix%,6)
 
     ' Off road - left
-    x(1)=0
-    x(2)=0
+    x(1)=0: x(2)=0
     polygon 4, x(), y(), g_segments(ix%,4), g_segments(ix%,4)
 
     ' Right rumble strip
-    x(0)=x1+w1+rw1
-    x(1)=x1+w1
-    x(2)=x2+w2
-    x(3)=x2+w2+rw2
+    x(0)=x1+w1+rw1: x(1)=x1+w1: x(2)=x2+w2: x(3)=x2+w2+rw2
     polygon 4, x(), y(), g_segments(ix%,6), g_segments(ix%,6)
 
     ' Off road - right
@@ -190,18 +169,13 @@ sub draw_segment(prev_seg_proj(), curr_seg_proj(), ix%)
 
     ' Lanes
     if g_segments(ix%, 5) then
-        local lw1=w1*20/ROAD_WIDTH
-        local lw2=w2*20/ROAD_WIDTH
-        local lx1=x1-w1
-        local lx2=x2-w2
+        local lw1=w1*20/ROAD_WIDTH, lw2=w2*20/ROAD_WIDTH
+        local lx1=x1-w1, lx2=x2-w2
         local ld1=w1*2/g_segments(ix%,7)-lw1/2
         local ld2=w2*2/g_segments(ix%,7)-lw2/2
         local lane%
         for lane%=1 to g_segments(ix%,7) + 1
-            x(0)=lx1
-            x(1)=lx1+lw1
-            x(2)=lx2+lw2
-            x(3)=lx2
+            x(0)=lx1: x(1)=lx1+lw1: x(2)=lx2+lw2: x(3)=lx2
             polygon 4, x(), y(), g_segments(ix%,5), g_segments(ix%,5)
             inc lx1,ld1: inc lx2,ld2
         next
